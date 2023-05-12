@@ -53,7 +53,7 @@ class App extends Component {
           dataSource={[
             {
               title: {
-                name: `Quo}.0 controller compatible`,
+                name: '222',
               },
               id: 100306660,
               time: 20,

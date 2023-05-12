@@ -1,5 +1,32 @@
 let types = require("@babel/types");
+let currentFilesDepend = [];
 let visitor = {
+  Program: {
+    enter(path, { opts = {} }) {
+      currentFilesDepend = [];
+    },
+    exit() {},
+  },
+  // 兼容babel-plugin-select CallExpression
+  CallExpression(path, state) {
+    const { node } = path;
+    const isDep = node.arguments.find((arg) => {
+      if (
+        currentFilesDepend.includes(arg.name) &&
+        path.scope.hasBinding(arg.name) &&
+        path.scope.getBinding(arg.name).path.type === "ImportSpecifier"
+      ) {
+        return true;
+      }
+      return false
+    });
+    if (isDep) {
+      const newCall = types.callExpression(node.callee, node.arguments);
+      path.replaceWithMultiple([newCall]);
+      // path.replaceWith(newCall);
+      currentFilesDepend=[]
+    }
+  },
   ImportDeclaration(path, ref = { opts: {} }) {
     let node = path.node;
     let specifiers = node.specifiers;
@@ -26,10 +53,11 @@ let visitor = {
           isSelect = true;
           return;
         }
+        currentFilesDepend.push(specifier.local.name);
         arr.push(
           types.importSpecifier(
             specifier.local,
-            types.stringLiteral(specifier.local.name)
+            types.identifier(specifier.local.name)
           )
         );
       });

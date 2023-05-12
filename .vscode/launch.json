@@ -7,8 +7,11 @@
     {
       "name": "Launch via NPM",
       "request": "launch",
-      "runtimeArgs": ["start"],
-      "runtimeExecutable": "npm",
+      // "runtimeArgs": ["scripts/start.js"],
+      "runtimeArgs": ["node.js"],
+      "runtimeExecutable": "/Users/eleme/.nvm/versions/node/v13.12.0/bin/node",
+      // "runtimeArgs": ["start"],
+      // "runtimeExecutable": "npm",
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
     }
