@@ -430,7 +430,7 @@ module.exports = function (webpackEnv) {
                     },
                   ],
                   [
-                    "./babel-plugin-import",
+                    "babel-plugin-import",
                     {
                       libraryName: "@alifd/next",
                       style: true,

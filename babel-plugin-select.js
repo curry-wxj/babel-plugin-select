@@ -1,32 +1,6 @@
 let types = require("@babel/types");
-let currentFilesDepend = [];
+
 let visitor = {
-  Program: {
-    enter(path, { opts = {} }) {
-      currentFilesDepend = [];
-    },
-    exit() {},
-  },
-  // 兼容babel-plugin-select CallExpression
-  CallExpression(path, state) {
-    const { node } = path;
-    const isDep = node.arguments.find((arg) => {
-      if (
-        currentFilesDepend.includes(arg.name) &&
-        path.scope.hasBinding(arg.name) &&
-        path.scope.getBinding(arg.name).path.type === "ImportSpecifier"
-      ) {
-        return true;
-      }
-      return false
-    });
-    if (isDep) {
-      const newCall = types.callExpression(node.callee, node.arguments);
-      path.replaceWithMultiple([newCall]);
-      // path.replaceWith(newCall);
-      currentFilesDepend=[]
-    }
-  },
   ImportDeclaration(path, ref = { opts: {} }) {
     let node = path.node;
     let specifiers = node.specifiers;
@@ -39,34 +13,34 @@ let visitor = {
       if (!isSelect) {
         return;
       }
-      const newImports = [];
       const arr = [];
-      // const newSpecifiers = specifiers.filter((v) => v.local.name !== "Select"); // 等同于arr
       specifiers.forEach((specifier) => {
         if (specifier.local.name === "Select") {
-          newImports.push(
-            types.importDeclaration(
-              [types.ImportDefaultSpecifier(specifier.local)],
-              types.stringLiteral("./MySelect")
-            )
-          );
           isSelect = true;
           return;
         }
-        currentFilesDepend.push(specifier.local.name);
         arr.push(
           types.importSpecifier(
-            specifier.local,
+            specifier.local, // Table、Message
             types.identifier(specifier.local.name)
           )
         );
       });
 
-      newImports.push(
+      // 这里使用replaceWith和insertAfter而没有使用replaceWithMultiple 统一替换
+      // 因为replaceWith替换后的代码 会插入到 node执行栈 最前面，从而不会影响到 babel-plugin-import CallExpression监听函数的处理
+      // replaceWithMultiple替换后的 代码会 插入到 node执行栈 最后面。最后在处理
+      path.replaceWith(
+        // import { Table, Select, Message } from "@alifd/next"; 替换为  import { Table, Message } from "@alifd/next"
         types.importDeclaration(arr, types.stringLiteral("@alifd/next"))
       );
-
-      path.replaceWithMultiple(newImports); // 用多个节点替换当前节点
+      path.insertAfter(
+        types.importDeclaration(
+          // 生成 import Select from "./MySelect";
+          [types.ImportDefaultSpecifier(types.identifier("Select"))],
+          types.stringLiteral("./MySelect")
+        )
+      );
     }
   },
 };
